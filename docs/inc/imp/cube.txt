@@ -1,0 +1,35 @@
+std::optional<HitRecord> Cube::hit(const Ray &ray) const
+{
+    int normalAxis = 0;
+    float tMin = std::numeric_limits<float>::min();
+    float tMax = std::numeric_limits<float>::max();
+    for (int axis = 0; axis < 3; axis++)
+    {
+        float invD = 1.0f / ray.direction[axis];
+        float t0 = (min[axis] - ray.origin[axis]) * invD;
+        float t1 = (max[axis] - ray.origin[axis]) * invD;
+        if (invD < 0.0f)
+            std::swap(t0, t1);
+        if (t0 > tMin)
+        {
+            tMin = t0;
+            normalAxis = axis;
+        }
+        tMax = std::min(tMax, t1);
+    }
+    if (tMin >= tMax)
+        return std::nullopt;
+    if (tMin < 0.001f)
+        return std::nullopt;
+
+    Vec3 point = ray.at(tMin);
+    Vec3 normal;
+    normal[normalAxis] = Sign((point - center)[normalAxis]);
+
+    HitRecord record;
+    record.parameter = tMin;
+    record.position = point;
+    record.normal = normal;
+    record.material = material;
+    return record;
+}

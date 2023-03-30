@@ -1,0 +1,25 @@
+static Vec3 castRay(const Ray& ray, const Scene& scene, int depth) {
+    if (depth <= 0) return std::min(1.0f, 2 * scene.getAmbient()) * background(ray);
+
+    if (std::optional<HitRecord> record = scene.hit(ray)) {
+        Material& material = record->material;
+        Vec3 reflectDir = Reflect(ray.direction, record->normal);
+        Vec3 refractDir = Refract(ray.direction, record->normal, material.refractive);
+        Vec3 reflected = castRay(Ray(record->position, reflectDir), scene, depth - 1);
+        Vec3 refracted = castRay(Ray(record->position, refractDir), scene, depth - 1);
+
+        float diffuse = scene.getAmbient();
+        float specular = 0.0f;
+        for (const Vec3& light : scene.lights()) {
+            Vec3 source = Normalize(light - record->position);
+            diffuse += std::max(0.0f, Dot(source, record->normal));
+            Vec3 r = -Reflect(-source, record->normal);
+            specular += std::pow(std::max(0.0f, Dot(r, Normalize(ray.direction))), material.shininess);
+        }
+        return material.diffuseAlbedo  * material.diffuse  * std::min(1.0f, diffuse)  +
+               material.specularAlbedo * material.specular * std::min(1.0f, specular) +
+               material.reflectAlbedo  * reflected +
+               material.refractAlbedo  * refracted;
+    }
+    return std::min(1.0f, 2 * scene.getAmbient()) * background(ray);
+}

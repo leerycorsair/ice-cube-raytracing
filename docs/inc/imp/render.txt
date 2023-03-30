@@ -1,0 +1,13 @@
+void Render(IFramebuffer* framebuffer, const Camera& camera, const Scene& scene, int depth) {
+    int width = framebuffer->width();
+    int height = framebuffer->height();
+#pragma omp parallel for
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            float s = (float)x / (width - 1);
+            float t = (float)y / (height - 1);
+            Ray ray = camera.generateRay(s, t);
+            framebuffer->setPixel(x, y, castRay(ray, scene, depth));
+        }
+    }
+}
